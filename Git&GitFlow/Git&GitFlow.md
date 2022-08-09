@@ -1,4 +1,8 @@
-# Git-2022.7.21
+# Git
+
+> author: sooooophia
+>
+> date: 2022.7.21
 
 是一种分布式版本控制工具，支持开发人员在不同的机器，不同的地方对同一仓库的代码进行合作开发。共分为工作区workspace、暂存区index、资源库repository和远端remote
 
@@ -465,4 +469,58 @@ git流程软件 SourceTree
 
 ~~~markdown
 以上是一个gitflow流程管理的实例. 在项目开始前，架构师先创建一个git仓库，包含了master/main分支，发布一个可运行的基础项目架构；在该基础上创建develop分支，并发布关于此次开发分支主要完成的功能和要求等；接着项目人员在develop分支上继续创建feature分支（多个功能多个分支），分别进行功能的开发实现，待研究人员开发完成后，申请合并到develop分支；测试人员会基于develop分支继续创建release分支进行功能测试，若测试中出现bug等问题则将问题反馈给develop分支，继续进行功能修补，若测试无问题则申请与master/main分支合并，作为可运行开发版本上线运行；若在项目使用过程中出现bug需要修复，则基于该问题项目版本创建hotfixes分支进行补丁修复开发，完成后需要同时合并到develop分支和master/main分支，实现对项目的完善。
+~~~
+
+
+
+# Git本地仓库和远端仓库的连接-2022.8.8
+
+~~~markdown
+背景：
+	在本地创建一个git仓库后，想与远端（github/gitlab）的仓库构建连接，实现git push命令的操作
+情景模拟：
+	假设本地创建了local_res仓库有一个master分支，远端创建了remote_res仓库有一个main分支，企图进行code的push提交
+~~~
+
+~~~markdown
+思路及注意要点：
+	本地仓库可以和远程仓库建立连接，但是本地已有的分支与远程分支由于没有共同的base，没有建立相互的连接（也就是互相不认识），所以二者实现push时没有形成映射不能实现push命令。所以解决问题的主要思路就是，在本地创建于远程分支存在映射关系的分支，并通过设置--allow-unrelated-histories参数同意互不认识的两个分支在本地实现合并后，通过存在映射关系的本地分支push提交到远程仓库
+
+实现步骤：
+1. 首先本地仓库先git init初始化本地仓库
+2. 此时本地仓库只有master分支，使用git remote add {url} 命令与远程仓库建立仓库的连接
+3. 此时本地仓库已经可以checkout到main分支，也就是说通过步骤2建立仓库连接已经为本地仓库映射了远程的main分支
+4. 但是此时执行git push --set-upstream origin master不能够为本地分支建立上游连接
+5. 切换到本地的master分支，设置 git config pull.rebase false  # 合并 
+6. 设置允许没有历史的分支进行合并git pull origin main --allow-unrelated-histories
+7. 合并分支到本地的main分支
+8. git push 本地的main分支到远程仓库
+9. 删除本地的master分支（脏分支）
+~~~
+
+<img src="https://raw.githubusercontent.com/Soooooophia/Sooophia_Picgo/master/image-20220808201515579.png" alt="image-20220808201515579 " style="zoom:50%;" />
+
+
+
+# 实际开发的git cherry-pick的使用-2022.8.8
+
+~~~markdown
+背景：
+	正式项目中，修复bug问题，如何通过git实现修复bug
+情景模拟：
+	假设当前版本1.0出现bug，需要在develop分支上开创新的fix-bug分支进行bug修复，同时需要在release分支对问题进行修复。但是release分支不接受commit提交，只能在gitlab上提交merge request申请（需要经过项目代码审核之后才能进行代码的合并）
+~~~
+
+~~~markdown
+思路及注意要点：
+	由于不能直接在release分支提交commit命令，因此只能通过在release分支创建新的分支并修改代码后实现分支的合并才能达到目的
+
+实现步骤：
+1. 在当前的develop分支创建fix-bug分支进行代码的修改和整理
+2. 在develop分支直接提交代码修改的commit后，提交该fix-bug分支的merge命令，并push到远端develop的分支上
+3. 记录本次修改代码的commit哈希值{commitHash}
+4. 切换到本地release分支，创建一个新的fix-bug-inrelease分支，在该分支将刚才提交的commit命令摘取过来，即执行git cherry-pick {commitHash}
+5. 再执行git push命令提交本分支的改动到远端
+6. 登录github/gitlab平台，在项目中提交一个git merge request
+7. 等待项目管理员审核代码并完成代码的合并
 ~~~
